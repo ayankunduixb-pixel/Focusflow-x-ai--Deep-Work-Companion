@@ -1,16 +1,29 @@
 import { useEffect, useState } from "react";
 
+type Particle = {
+  id: number;
+  left: number;
+  size: number;
+  delay: number;
+  duration: number;
+  hue: string;
+};
+
 export function Particles({ count = 28 }: { count?: number }) {
-  const [items] = useState(() =>
-    Array.from({ length: count }, (_, i) => ({
-      id: i,
-      left: Math.random() * 100,
-      size: 2 + Math.random() * 4,
-      delay: Math.random() * 15,
-      duration: 16 + Math.random() * 18,
-      hue: Math.random() > 0.5 ? "var(--cyan-glow)" : "var(--purple-glow)",
-    }))
-  );
+  const [items, setItems] = useState<Particle[]>([]);
+
+  useEffect(() => {
+    setItems(
+      Array.from({ length: count }, (_, i) => ({
+        id: i,
+        left: Math.random() * 100,
+        size: 2 + Math.random() * 4,
+        delay: Math.random() * 15,
+        duration: 16 + Math.random() * 18,
+        hue: Math.random() > 0.5 ? "var(--cyan-glow)" : "var(--purple-glow)",
+      }))
+    );
+  }, [count]);
 
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
