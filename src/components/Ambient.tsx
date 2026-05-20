@@ -47,12 +47,13 @@ export function Particles({ count = 28 }: { count?: number }) {
 }
 
 export function Clock() {
-  const [now, setNow] = useState(new Date());
+  const [now, setNow] = useState<Date | null>(null);
   useEffect(() => {
+    setNow(new Date());
     const t = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(t);
   }, []);
-  const time = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const time = now ? now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "--:--";
   return <span className="font-mono text-sm text-muted-foreground tabular-nums">{time}</span>;
 }
 
