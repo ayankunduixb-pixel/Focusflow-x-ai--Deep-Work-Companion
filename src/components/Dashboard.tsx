@@ -1,5 +1,14 @@
 import { motion } from "framer-motion";
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import { useEffect, useState } from "react";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from "recharts";
 import { Flame, Target, TrendingUp, Zap } from "lucide-react";
 
 interface Stats {
@@ -9,7 +18,7 @@ interface Stats {
   score: number;
 }
 
-const weekly = [
+const baseWeekly = [
   { day: "Mon", min: 75 },
   { day: "Tue", min: 110 },
   { day: "Wed", min: 60 },
@@ -19,19 +28,32 @@ const weekly = [
   { day: "Sun", min: 130 },
 ];
 
-function StatCard({ icon: Icon, label, value, accent, delay }: { icon: any; label: string; value: string; accent: string; delay: number }) {
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  sub,
+  delay,
+}: {
+  icon: any;
+  label: string;
+  value: string;
+  sub?: string;
+  delay: number;
+}) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay, duration: 0.5 }}
-      whileHover={{ y: -4 }}
-      className="glass p-5 relative overflow-hidden group"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.35 }}
+      className="card-surface p-4"
     >
-      <div className={`absolute -top-10 -right-10 w-32 h-32 rounded-full blur-3xl opacity-30 group-hover:opacity-50 transition`} style={{ background: accent }} />
-      <div className="flex items-center justify-between relative">
-        <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{label}</div>
-        <Icon size={16} className="text-muted-foreground" />
+      <div className="flex items-center justify-between">
+        <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{label}</div>
+        <Icon size={14} className="text-muted-foreground" />
       </div>
-      <div className="text-3xl font-display font-semibold mt-3 relative">{value}</div>
+      <div className="text-2xl font-semibold mt-2 tracking-tight">{value}</div>
+      {sub && <div className="text-[11px] text-muted-foreground mt-1">{sub}</div>}
     </motion.div>
   );
 }
@@ -40,81 +62,119 @@ export function Dashboard({ stats }: { stats: Stats }) {
   const hours = Math.floor(stats.focusMinutes / 60);
   const mins = stats.focusMinutes % 60;
 
+  // Live "real-time" weekly data — Sunday updates as user progresses
+  const [weekly, setWeekly] = useState(baseWeekly);
+  useEffect(() => {
+    setWeekly((prev) => {
+      const next = [...prev];
+      next[next.length - 1] = { day: "Sun", min: 90 + Math.min(180, stats.focusMinutes) };
+      return next;
+    });
+  }, [stats.focusMinutes]);
+
+  const [range, setRange] = useState<"7d" | "30d">("7d");
+
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={Target} label="Focus today" value={`${hours}h ${mins}m`} accent="var(--neon)" delay={0} />
-        <StatCard icon={Zap} label="Sessions" value={`${stats.sessions}`} accent="var(--cyan-glow)" delay={0.05} />
-        <StatCard icon={Flame} label="Streak" value={`${stats.streak} days`} accent="var(--purple-glow)" delay={0.1} />
-        <StatCard icon={TrendingUp} label="Productivity" value={`${stats.score}%`} accent="var(--neon)" delay={0.15} />
+    <div className="space-y-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard icon={Target} label="Focus today" value={`${hours}h ${mins}m`} sub="+25m from last session" delay={0} />
+        <StatCard icon={Zap} label="Sessions" value={`${stats.sessions}`} sub="Goal: 4/day" delay={0.04} />
+        <StatCard icon={Flame} label="Streak" value={`${stats.streak} days`} sub="Personal best: 12" delay={0.08} />
+        <StatCard icon={TrendingUp} label="Productivity" value={`${stats.score}%`} sub="Trending up" delay={0.12} />
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid lg:grid-cols-3 gap-5">
         <motion.div
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-          className="glass p-6 lg:col-span-2"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="card-surface p-5 lg:col-span-2"
         >
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-5">
             <div>
-              <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Weekly Deep Work</div>
-              <h3 className="text-xl font-display font-semibold mt-1">Minutes focused</h3>
+              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Weekly deep work</div>
+              <h3 className="text-base font-semibold mt-1">Minutes focused</h3>
             </div>
-            <div className="text-xs text-muted-foreground">Last 7 days</div>
+            <div className="inline-flex p-1 rounded-lg bg-white/[0.03] border border-white/[0.07]">
+              <button onClick={() => setRange("7d")} className={`tab ${range === "7d" ? "tab-active" : ""}`}>7d</button>
+              <button onClick={() => setRange("30d")} className={`tab ${range === "30d" ? "tab-active" : ""}`}>30d</button>
+            </div>
           </div>
-          <div className="h-64">
+          <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={weekly} margin={{ left: -20, right: 8, top: 8, bottom: 0 }}>
                 <defs>
                   <linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#7c5cff" stopOpacity={0.7} />
-                    <stop offset="100%" stopColor="#7c5cff" stopOpacity={0} />
+                    <stop offset="0%" stopColor="oklch(0.72 0.16 265)" stopOpacity={0.35} />
+                    <stop offset="100%" stopColor="oklch(0.72 0.16 265)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
-                <XAxis dataKey="day" stroke="rgba(255,255,255,0.4)" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="rgba(255,255,255,0.4)" fontSize={12} tickLine={false} axisLine={false} />
+                <CartesianGrid stroke="oklch(1 0 0 / 0.04)" vertical={false} />
+                <XAxis dataKey="day" stroke="oklch(1 0 0 / 0.4)" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis stroke="oklch(1 0 0 / 0.4)" fontSize={11} tickLine={false} axisLine={false} />
                 <Tooltip
-                  contentStyle={{ background: "rgba(20,20,30,0.95)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, fontSize: 12 }}
-                  labelStyle={{ color: "rgba(255,255,255,0.6)" }}
+                  contentStyle={{
+                    background: "oklch(0.19 0.006 270)",
+                    border: "1px solid oklch(1 0 0 / 0.08)",
+                    borderRadius: 8,
+                    fontSize: 12,
+                    boxShadow: "0 8px 24px -12px oklch(0 0 0 / 0.6)",
+                  }}
+                  labelStyle={{ color: "oklch(1 0 0 / 0.5)" }}
+                  cursor={{ stroke: "oklch(1 0 0 / 0.1)" }}
                 />
-                <Area type="monotone" dataKey="min" stroke="#22d3ee" strokeWidth={2.5} fill="url(#areaFill)" />
+                <Area
+                  type="monotone"
+                  dataKey="min"
+                  stroke="oklch(0.78 0.14 240)"
+                  strokeWidth={2}
+                  fill="url(#areaFill)"
+                  animationDuration={600}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
-          className="glass p-6"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="card-surface p-5"
         >
-          <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Focus Level</div>
-          <h3 className="text-xl font-display font-semibold mt-1 mb-6">Flow state meter</h3>
+          <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Flow state</div>
+          <h3 className="text-base font-semibold mt-1 mb-5">Live metrics</h3>
 
-          <div className="space-y-5">
+          <div className="space-y-4">
             {[
               { label: "Concentration", v: stats.score },
               { label: "Consistency", v: Math.min(100, stats.streak * 12) },
               { label: "Endurance", v: Math.min(100, stats.sessions * 18) },
             ].map((m) => (
               <div key={m.label}>
-                <div className="flex justify-between text-sm mb-2">
+                <div className="flex justify-between text-xs mb-1.5">
                   <span className="text-muted-foreground">{m.label}</span>
-                  <span className="font-mono">{m.v}%</span>
+                  <span className="font-mono text-foreground/80">{m.v}%</span>
                 </div>
-                <div className="h-2 rounded-full bg-white/5 overflow-hidden">
+                <div className="h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
                   <motion.div
-                    initial={{ width: 0 }} animate={{ width: `${m.v}%` }} transition={{ duration: 1, ease: "easeOut" }}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${m.v}%` }}
+                    transition={{ duration: 0.8, ease: "easeOut" }}
                     className="h-full rounded-full"
-                    style={{ background: "var(--gradient-hero)" }}
+                    style={{ background: "var(--gradient-ring)" }}
                   />
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="mt-6 p-4 rounded-xl bg-white/5 border border-white/10">
-            <div className="text-xs text-muted-foreground">AI Insight</div>
-            <p className="text-sm mt-1">Your peak focus window is between <span className="text-foreground font-medium">7–9 PM</span>. Stack hard tasks there.</p>
+          <div className="mt-5 p-3 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-1">AI Insight</div>
+            <p className="text-xs leading-relaxed text-foreground/85">
+              Your peak focus window is between{" "}
+              <span className="text-foreground font-medium">7–9 PM</span>. Stack hard tasks there.
+            </p>
           </div>
         </motion.div>
       </div>

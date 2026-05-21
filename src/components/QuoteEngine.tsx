@@ -36,7 +36,7 @@ export function QuoteEngine() {
   const [idx, setIdx] = useState(0);
 
   useEffect(() => {
-    const t = setInterval(() => setIdx((i) => i + 1), 8000);
+    const t = setInterval(() => setIdx((i) => i + 1), 10000);
     return () => clearInterval(t);
   }, []);
 
@@ -44,22 +44,21 @@ export function QuoteEngine() {
   const quote = list[idx % list.length];
 
   return (
-    <div className="glass p-8 relative overflow-hidden">
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+    <div className="card-surface p-6">
+      <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
         <div>
-          <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">AI Motivation Engine</div>
-          <h3 className="text-2xl font-semibold mt-1">Fuel for the mind</h3>
+          <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Daily reminder</div>
+          <h3 className="text-base font-semibold mt-1">Mindset</h3>
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-1 flex-wrap">
           {categories.map((c) => (
             <button
               key={c}
-              onClick={() => { setCat(c); setIdx(0); }}
-              className={`text-xs px-3 py-1.5 rounded-full border transition ${
-                c === cat
-                  ? "bg-primary/20 border-primary/50 text-foreground glow-primary"
-                  : "border-white/10 text-muted-foreground hover:text-foreground hover:border-white/20"
-              }`}
+              onClick={() => {
+                setCat(c);
+                setIdx(0);
+              }}
+              className={`tab ${c === cat ? "tab-active" : ""}`}
             >
               {c}
             </button>
@@ -67,22 +66,20 @@ export function QuoteEngine() {
         </div>
       </div>
 
-      <div className="relative min-h-[120px] flex items-center">
+      <div className="relative min-h-[88px] flex items-center">
         <AnimatePresence mode="wait">
           <motion.p
             key={quote}
-            initial={{ opacity: 0, y: 20, filter: "blur(8px)" }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            exit={{ opacity: 0, y: -20, filter: "blur(8px)" }}
-            transition={{ duration: 0.6 }}
-            className="text-2xl md:text-3xl font-display font-medium leading-snug text-gradient"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.4 }}
+            className="text-xl md:text-2xl font-display font-medium leading-snug tracking-tight text-foreground/95"
           >
             "{quote}"
           </motion.p>
         </AnimatePresence>
       </div>
-
-      <div className="absolute -bottom-24 -right-24 w-64 h-64 rounded-full bg-[var(--purple-glow)] opacity-20 blur-3xl pointer-events-none" />
     </div>
   );
 }
