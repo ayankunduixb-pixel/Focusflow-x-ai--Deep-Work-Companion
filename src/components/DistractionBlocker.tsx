@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle } from "lucide-react";
+import { ShieldAlert } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export function DistractionBlocker({ active }: { active: boolean }) {
@@ -28,32 +28,38 @@ export function DistractionBlocker({ active }: { active: boolean }) {
 
   return (
     <>
-      <div className="fixed top-4 right-4 z-30 glass px-3 py-2 text-xs flex items-center gap-2">
-        <span className="w-2 h-2 rounded-full" style={{ background: active ? "var(--neon)" : "rgba(255,255,255,0.3)", boxShadow: active ? "0 0 8px var(--neon)" : "none" }} />
+      <div className="fixed bottom-4 right-4 z-30 card-surface px-3 py-2 text-xs flex items-center gap-2">
+        <span
+          className={`w-1.5 h-1.5 rounded-full ${
+            active ? "bg-emerald-400 pulse-soft" : "bg-white/20"
+          }`}
+        />
         <span className="text-muted-foreground">Focus shield</span>
-        <span className="font-mono">{recovery}%</span>
+        <span className="font-mono text-foreground/80">{recovery}%</span>
       </div>
 
       <AnimatePresence>
         {show && (
           <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[70] bg-background/90 backdrop-blur-2xl flex items-center justify-center p-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] bg-background/95 backdrop-blur-xl flex items-center justify-center p-6"
           >
             <motion.div
-              initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9 }}
-              className="text-center max-w-lg"
+              initial={{ scale: 0.96, y: 8 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.96 }}
+              transition={{ duration: 0.3 }}
+              className="text-center max-w-sm"
             >
-              <motion.div
-                animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 1.5, repeat: Infinity }}
-                className="w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center"
-                style={{ background: "var(--gradient-hero)", boxShadow: "0 0 60px var(--neon)" }}
-              >
-                <AlertTriangle size={36} className="text-background" />
-              </motion.div>
-              <h2 className="text-4xl font-display font-semibold text-gradient mb-3">Stay focused.</h2>
-              <p className="text-xl text-foreground/80 mb-2">Your future is watching.</p>
-              <p className="text-sm text-muted-foreground">Return to this window to continue your session.</p>
+              <div className="w-12 h-12 rounded-xl mx-auto mb-5 flex items-center justify-center bg-white/[0.06] border border-white/10">
+                <ShieldAlert size={22} className="text-foreground" />
+              </div>
+              <h2 className="text-2xl font-semibold mb-2 tracking-tight">Stay focused</h2>
+              <p className="text-sm text-muted-foreground">
+                Return to this window to continue your session.
+              </p>
             </motion.div>
           </motion.div>
         )}

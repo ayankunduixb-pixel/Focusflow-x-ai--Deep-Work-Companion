@@ -4,35 +4,36 @@ import { useEffect, useState } from "react";
 export function BootScreen() {
   const [show, setShow] = useState(true);
   useEffect(() => {
-    const t = setTimeout(() => setShow(false), 1600);
+    const t = setTimeout(() => setShow(false), 1100);
     return () => clearTimeout(t);
   }, []);
   return (
     <AnimatePresence>
       {show && (
         <motion.div
-          initial={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.6 }}
-          className="fixed inset-0 z-[100] aurora-bg flex items-center justify-center"
+          initial={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.45 }}
+          className="fixed inset-0 z-[100] bg-background flex items-center justify-center"
         >
-          <div className="absolute inset-0 grid-bg opacity-50" />
-          <div className="relative text-center">
+          <div className="text-center">
             <motion.div
-              initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.8, ease: "easeOut" }}
-              className="text-5xl md:text-7xl font-display font-bold text-gradient tracking-tight"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="flex items-center justify-center gap-3"
             >
-              FOCUSFLOW <span className="text-foreground">X</span>
+              <div className="w-8 h-8 rounded-lg bg-foreground flex items-center justify-center">
+                <span className="text-background font-semibold text-sm">F</span>
+              </div>
+              <div className="text-xl font-semibold tracking-tight">FocusFlow X</div>
             </motion.div>
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
-              className="text-xs uppercase tracking-[0.4em] text-muted-foreground mt-4"
-            >
-              Deep Work Companion
-            </motion.div>
-            <div className="w-48 h-[2px] mx-auto mt-8 rounded-full bg-white/10 overflow-hidden">
+            <div className="w-32 h-[2px] mx-auto mt-6 rounded-full bg-white/5 overflow-hidden">
               <motion.div
-                initial={{ width: 0 }} animate={{ width: "100%" }} transition={{ duration: 1.4, ease: "easeInOut" }}
-                className="h-full"
-                style={{ background: "var(--gradient-hero)" }}
+                initial={{ width: 0 }}
+                animate={{ width: "100%" }}
+                transition={{ duration: 0.9, ease: "easeInOut" }}
+                className="h-full bg-foreground/60"
               />
             </div>
           </div>
