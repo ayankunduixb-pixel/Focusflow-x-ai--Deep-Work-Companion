@@ -1,7 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Github } from "lucide-react";
+import { Github, LogOut } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { toast, Toaster } from "sonner";
+
 import { FocusTimer } from "@/components/FocusTimer";
 import { Dashboard } from "@/components/Dashboard";
 import { QuoteEngine } from "@/components/QuoteEngine";
@@ -13,43 +17,82 @@ import { DistractionBlocker } from "@/components/DistractionBlocker";
 import { BootScreen } from "@/components/BootScreen";
 import { Particles, Clock, greet } from "@/components/Ambient";
 
+import { supabase } from "@/integrations/supabase/client";
+import { getUserStats, logFocusSession } from "@/lib/sessions.functions";
+
 export const Route = createFileRoute("/")({
   component: Index,
+  beforeLoad: async () => {
+    if (typeof window === "undefined") return;
+    const { data } = await supabase.auth.getSession();
+    if (!data.session) throw redirect({ to: "/auth" });
+  },
   head: () => ({
     meta: [
       { title: "FocusFlow X — Deep Work Companion" },
-      {
-        name: "description",
-        content:
-          "An AI-powered deep focus companion for students. Pomodoro timer, ambient sounds, motivation engine, and gamified productivity tracking.",
-      },
+      { name: "description", content: "AI-powered deep focus companion: Pomodoro timer, analytics, ambient sounds, and gamified productivity." },
     ],
   }),
 });
 
 function Index() {
-  const [xp, setXp] = useState(180);
-  const [sessions, setSessions] = useState(3);
-  const [focusMinutes, setFocusMinutes] = useState(95);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [focusActive, setFocusActive] = useState(false);
+  const [ready, setReady] = useState(false);
 
-  const level = Math.floor(xp / 250) + 1;
-  const score = Math.min(100, Math.round(sessions * 12 + focusMinutes / 4));
-  const streak = 7;
+  // Final auth guard on client (handles direct refresh on SSR)
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (!data.session) navigate({ to: "/auth" });
+      else setReady(true);
+    });
+  }, [navigate]);
 
-  const handleComplete = (gained: number) => {
-    setXp((x) => x + gained);
-    setSessions((s) => s + 1);
-    setFocusMinutes((m) => m + 25);
+  const fetchStats = useServerFn(getUserStats);
+  const logSession = useServerFn(logFocusSession);
+
+  const { data: stats } = useQuery({
+    queryKey: ["user-stats"],
+    queryFn: () => fetchStats(),
+    enabled: ready,
+  });
+
+  const handleComplete = async (gained: number) => {
+    try {
+      await logSession({ data: { mode: "focus", duration_minutes: 25, xp_earned: gained } });
+      queryClient.invalidateQueries({ queryKey: ["user-stats"] });
+      toast.success("Session logged · +50 XP");
+    } catch (err: any) {
+      toast.error(err.message ?? "Failed to log session");
+    }
   };
 
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate({ to: "/auth" });
+  };
+
+  const displayName =
+    stats?.profile?.display_name ||
+    stats?.profile?.email?.split("@")[0] ||
+    "Friend";
+
+  const focusMinutes = stats?.focusMinutesToday ?? 0;
+  const sessions = stats?.sessionsToday ?? 0;
+  const streak = stats?.streak ?? 0;
+  const totalXp = stats?.totalXp ?? 0;
+  const score = Math.min(100, Math.round(sessions * 12 + focusMinutes / 4));
+  const level = Math.floor(totalXp / 250) + 1;
+  const weekly = stats?.weekly;
+
   return (
-    <div className="dark min-h-screen ambient-bg text-foreground relative">
+    <div className="dark min-h-screen ambient-bg text-foreground relative overflow-x-hidden">
+      <Toaster theme="dark" position="top-center" />
       <BootScreen />
       <Particles />
       <DistractionBlocker active={focusActive} />
 
-      {/* Top nav */}
       <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-background/70 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-5 md:px-8 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -65,14 +108,21 @@ function Index() {
             <Clock />
             <span className="hidden md:inline chip">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              Online
+              {displayName}
             </span>
+            <button
+              onClick={handleSignOut}
+              className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors"
+              title="Sign out"
+            >
+              <LogOut size={13} />
+              <span className="hidden sm:inline">Sign out</span>
+            </button>
           </div>
         </div>
       </header>
 
       <main className="relative z-10 max-w-6xl mx-auto px-5 md:px-8 py-10 md:py-14">
-        {/* Hero greeting */}
         <motion.section
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -83,15 +133,14 @@ function Index() {
             Welcome back
           </div>
           <h1 className="text-3xl md:text-5xl font-semibold tracking-tight leading-[1.1]">
-            {greet("Ayan")}.<br />
+            {greet(displayName)}.<br />
             <span className="text-muted-foreground">Let's enter deep work.</span>
           </h1>
           <p className="text-sm text-muted-foreground mt-4 max-w-md">
-            One session at a time. The future you is being built right now.
+            One session at a time. Every minute is saved to your account.
           </p>
         </motion.section>
 
-        {/* Primary: Timer + side rail */}
         <section className="grid lg:grid-cols-3 gap-5 mb-12">
           <motion.div
             initial={{ opacity: 0, y: 12 }}
@@ -111,7 +160,6 @@ function Index() {
           </div>
         </section>
 
-        {/* Analytics */}
         <section className="mb-12">
           <div className="mb-5 flex items-end justify-between">
             <div>
@@ -123,30 +171,30 @@ function Index() {
               </h2>
             </div>
           </div>
-          <Dashboard stats={{ focusMinutes, sessions, streak, score }} />
+          <Dashboard
+            stats={{ focusMinutes, sessions, streak, score }}
+            weekly={weekly}
+          />
         </section>
 
-        {/* Progression + AI Coach */}
         <section className="grid lg:grid-cols-2 gap-5 mb-12">
-          <Achievements xp={xp} level={level} />
+          <Achievements xp={totalXp} level={level} />
           <AIAssistant />
         </section>
 
-        {/* Quote */}
         <section className="mb-16">
           <QuoteEngine />
         </section>
 
-        {/* Footer */}
         <footer className="pt-8 border-t border-white/[0.06] flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
           <div>
-            Built by{" "}
-            <span className="text-foreground font-medium">Ayan Kundu</span> · Build
-            One App A Day Challenge
+            Built by <span className="text-foreground font-medium">Ayan Kundu</span> · Build One App A Day Challenge
           </div>
           <div className="flex items-center gap-3">
             <span>FocusFlow X · v1.0</span>
-            <Github size={13} />
+            <a href="https://github.com/" target="_blank" rel="noreferrer" className="hover:text-foreground transition-colors">
+              <Github size={13} />
+            </a>
           </div>
         </footer>
       </main>
