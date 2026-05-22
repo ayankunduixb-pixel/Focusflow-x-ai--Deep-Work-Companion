@@ -58,19 +58,15 @@ function StatCard({
   );
 }
 
-export function Dashboard({ stats }: { stats: Stats }) {
+export function Dashboard({ stats, weekly: weeklyProp }: { stats: Stats; weekly?: { day: string; min: number }[] }) {
   const hours = Math.floor(stats.focusMinutes / 60);
   const mins = stats.focusMinutes % 60;
 
-  // Live "real-time" weekly data — Sunday updates as user progresses
-  const [weekly, setWeekly] = useState(baseWeekly);
+  // Live weekly data — prefer real data from props, fall back to base
+  const [weekly, setWeekly] = useState(weeklyProp ?? baseWeekly);
   useEffect(() => {
-    setWeekly((prev) => {
-      const next = [...prev];
-      next[next.length - 1] = { day: "Sun", min: 90 + Math.min(180, stats.focusMinutes) };
-      return next;
-    });
-  }, [stats.focusMinutes]);
+    if (weeklyProp && weeklyProp.length) setWeekly(weeklyProp);
+  }, [weeklyProp]);
 
   const [range, setRange] = useState<"7d" | "30d">("7d");
 
