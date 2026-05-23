@@ -63,7 +63,6 @@ export function AmbientControls() {
   useEffect(() => {
     const a = new Audio();
     a.preload = "auto";
-    a.crossOrigin = "anonymous";
     audioRef.current = a;
     return () => {
       a.pause();
