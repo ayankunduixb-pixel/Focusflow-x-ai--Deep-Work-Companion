@@ -15,7 +15,7 @@ import { Achievements } from "@/components/Achievements";
 import { GoalsTracker } from "@/components/GoalsTracker";
 import { DistractionBlocker } from "@/components/DistractionBlocker";
 import { BootScreen } from "@/components/BootScreen";
-import { Particles, Clock, greet } from "@/components/Ambient";
+import { Particles, Clock, useGreeting } from "@/components/Ambient";
 
 import { supabase } from "@/integrations/supabase/client";
 import { getUserStats, logFocusSession } from "@/lib/sessions.functions";
