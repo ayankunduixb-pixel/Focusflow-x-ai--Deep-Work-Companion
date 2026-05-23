@@ -15,7 +15,7 @@ import { Achievements } from "@/components/Achievements";
 import { GoalsTracker } from "@/components/GoalsTracker";
 import { DistractionBlocker } from "@/components/DistractionBlocker";
 import { BootScreen } from "@/components/BootScreen";
-import { Particles, Clock, greet } from "@/components/Ambient";
+import { Particles, Clock, useGreeting } from "@/components/Ambient";
 
 import { supabase } from "@/integrations/supabase/client";
 import { getUserStats, logFocusSession } from "@/lib/sessions.functions";
@@ -85,6 +85,7 @@ function Index() {
   const score = Math.min(100, Math.round(sessions * 12 + focusMinutes / 4));
   const level = Math.floor(totalXp / 250) + 1;
   const weekly = stats?.weekly;
+  const greeting = useGreeting(displayName);
 
   return (
     <div className="dark min-h-screen ambient-bg text-foreground relative overflow-x-hidden">
@@ -133,7 +134,7 @@ function Index() {
             Welcome back
           </div>
           <h1 className="text-3xl md:text-5xl font-semibold tracking-tight leading-[1.1]">
-            {greet(displayName)}.<br />
+            {greeting}.<br />
             <span className="text-muted-foreground">Let's enter deep work.</span>
           </h1>
           <p className="text-sm text-muted-foreground mt-4 max-w-md">
