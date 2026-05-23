@@ -85,6 +85,7 @@ function Index() {
   const score = Math.min(100, Math.round(sessions * 12 + focusMinutes / 4));
   const level = Math.floor(totalXp / 250) + 1;
   const weekly = stats?.weekly;
+  const greeting = useGreeting(displayName);
 
   return (
     <div className="dark min-h-screen ambient-bg text-foreground relative overflow-x-hidden">
