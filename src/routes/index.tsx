@@ -134,7 +134,7 @@ function Index() {
             Welcome back
           </div>
           <h1 className="text-3xl md:text-5xl font-semibold tracking-tight leading-[1.1]">
-            {greet(displayName)}.<br />
+            {greeting}.<br />
             <span className="text-muted-foreground">Let's enter deep work.</span>
           </h1>
           <p className="text-sm text-muted-foreground mt-4 max-w-md">
