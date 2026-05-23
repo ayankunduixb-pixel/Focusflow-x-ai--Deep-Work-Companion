@@ -6,35 +6,42 @@ type SoundId = "rain" | "cafe" | "lofi" | "nature";
 
 type Track = { title: string; url: string };
 
-// Curated, hotlink-friendly tracks (archive.org public domain / CC).
-// Each scene rotates through its playlist so sessions stay fresh.
+// Curated, hotlink + CORS friendly instrumental tracks (SoundHelix, free to use).
+// Each category cycles through its own playlist so sessions stay fresh.
+const sh = (n: number) => `https://www.soundhelix.com/examples/mp3/SoundHelix-Song-${n}.mp3`;
+
 const playlists: Record<SoundId, Track[]> = {
   lofi: [
-    { title: "Lofi Study — Chill Beats", url: "https://archive.org/download/lofi-study-chill-beats/lofi-study-chill-beats.mp3" },
-    { title: "Dreamy Lofi", url: "https://archive.org/download/dreamy-lofi/dreamy-lofi.mp3" },
-    { title: "Midnight Lofi", url: "https://archive.org/download/midnight-lofi/midnight-lofi.mp3" },
+    { title: "Lo-Fi Study Beat 01", url: sh(1) },
+    { title: "Lo-Fi Study Beat 02", url: sh(7) },
+    { title: "Lo-Fi Study Beat 03", url: sh(11) },
+    { title: "Lo-Fi Study Beat 04", url: sh(14) },
   ],
   rain: [
-    { title: "Heavy Rain on Roof", url: "https://archive.org/download/rain-on-roof/rain-on-roof.mp3" },
-    { title: "Gentle Rainfall", url: "https://archive.org/download/gentle-rainfall/gentle-rainfall.mp3" },
+    { title: "Deep Focus 01", url: sh(3) },
+    { title: "Deep Focus 02", url: sh(5) },
+    { title: "Deep Focus 03", url: sh(9) },
   ],
   cafe: [
-    { title: "Parisian Café Ambience", url: "https://archive.org/download/cafe-ambience-paris/cafe-ambience-paris.mp3" },
-    { title: "Cozy Coffeehouse", url: "https://archive.org/download/cozy-coffeehouse/cozy-coffeehouse.mp3" },
+    { title: "Café Groove 01", url: sh(2) },
+    { title: "Café Groove 02", url: sh(6) },
+    { title: "Café Groove 03", url: sh(12) },
   ],
   nature: [
-    { title: "Forest Birds at Dawn", url: "https://archive.org/download/forest-birds-dawn/forest-birds-dawn.mp3" },
-    { title: "Mountain Stream", url: "https://archive.org/download/mountain-stream/mountain-stream.mp3" },
+    { title: "Ambient Flow 01", url: sh(4) },
+    { title: "Ambient Flow 02", url: sh(8) },
+    { title: "Ambient Flow 03", url: sh(15) },
   ],
 };
 
-// Fallback stream URLs (Internet radio) — used if direct files are unreachable.
+// Fallback streaming radio if direct files fail.
 const fallbackStreams: Record<SoundId, Track[]> = {
-  lofi: [{ title: "Lofi Girl Radio", url: "https://play.streamafrica.net/lofiradio" }],
-  rain: [{ title: "Rain Radio", url: "https://streams.calmradio.com/api/39/128/stream" }],
-  cafe: [{ title: "Coffeehouse Radio", url: "https://streams.calmradio.com/api/231/128/stream" }],
-  nature: [{ title: "Nature Radio", url: "https://streams.calmradio.com/api/41/128/stream" }],
+  lofi: [{ title: "Lofi Radio", url: "https://play.streamafrica.net/lofiradio" }],
+  rain: [{ title: "Focus Radio", url: sh(10) }],
+  cafe: [{ title: "Coffeehouse Radio", url: sh(13) }],
+  nature: [{ title: "Ambient Radio", url: sh(16) }],
 };
+
 
 const sounds: { id: SoundId; label: string; icon: typeof CloudRain; hint: string }[] = [
   { id: "lofi", label: "Lo-Fi Beats", icon: Music2, hint: "Chill study beats" },
