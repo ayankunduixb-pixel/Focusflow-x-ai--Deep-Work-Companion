@@ -1,250 +1,135 @@
 import { motion } from "framer-motion";
-import { CloudRain, Coffee, Music2, Trees, Volume2, VolumeX } from "lucide-react";
+import { CloudRain, Coffee, Music2, Trees, Volume2, VolumeX, SkipForward } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 type SoundId = "rain" | "cafe" | "lofi" | "nature";
 
+type Track = { title: string; url: string };
+
+// Curated, hotlink + CORS friendly instrumental tracks (SoundHelix, free to use).
+// Each category cycles through its own playlist so sessions stay fresh.
+const sh = (n: number) => `https://www.soundhelix.com/examples/mp3/SoundHelix-Song-${n}.mp3`;
+
+const playlists: Record<SoundId, Track[]> = {
+  lofi: [
+    { title: "Lo-Fi Study Beat 01", url: sh(1) },
+    { title: "Lo-Fi Study Beat 02", url: sh(7) },
+    { title: "Lo-Fi Study Beat 03", url: sh(11) },
+    { title: "Lo-Fi Study Beat 04", url: sh(14) },
+  ],
+  rain: [
+    { title: "Deep Focus 01", url: sh(3) },
+    { title: "Deep Focus 02", url: sh(5) },
+    { title: "Deep Focus 03", url: sh(9) },
+  ],
+  cafe: [
+    { title: "Café Groove 01", url: sh(2) },
+    { title: "Café Groove 02", url: sh(6) },
+    { title: "Café Groove 03", url: sh(12) },
+  ],
+  nature: [
+    { title: "Ambient Flow 01", url: sh(4) },
+    { title: "Ambient Flow 02", url: sh(8) },
+    { title: "Ambient Flow 03", url: sh(15) },
+  ],
+};
+
+// Fallback streaming radio if direct files fail.
+const fallbackStreams: Record<SoundId, Track[]> = {
+  lofi: [{ title: "Lofi Radio", url: "https://play.streamafrica.net/lofiradio" }],
+  rain: [{ title: "Focus Radio", url: sh(10) }],
+  cafe: [{ title: "Coffeehouse Radio", url: sh(13) }],
+  nature: [{ title: "Ambient Radio", url: sh(16) }],
+};
+
+
 const sounds: { id: SoundId; label: string; icon: typeof CloudRain; hint: string }[] = [
+  { id: "lofi", label: "Lo-Fi Beats", icon: Music2, hint: "Chill study beats" },
   { id: "rain", label: "Rain", icon: CloudRain, hint: "Steady downpour" },
   { id: "cafe", label: "Café", icon: Coffee, hint: "Warm room tone" },
-  { id: "lofi", label: "Lo-Fi", icon: Music2, hint: "Soft chord pad" },
-  { id: "nature", label: "Nature", icon: Trees, hint: "Wind & birds" },
+  { id: "nature", label: "Nature", icon: Trees, hint: "Forest & birds" },
 ];
-
-// ---- Procedural Web Audio engine ---------------------------------------
-// Each scene returns a disposer that cleanly tears down its nodes.
-
-function makeNoiseBuffer(ctx: AudioContext, seconds = 2, type: "white" | "pink" | "brown" = "white") {
-  const length = ctx.sampleRate * seconds;
-  const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
-  const data = buffer.getChannelData(0);
-  let lastOut = 0;
-  let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
-  for (let i = 0; i < length; i++) {
-    const white = Math.random() * 2 - 1;
-    if (type === "white") {
-      data[i] = white;
-    } else if (type === "pink") {
-      b0 = 0.99886 * b0 + white * 0.0555179;
-      b1 = 0.99332 * b1 + white * 0.0750759;
-      b2 = 0.969 * b2 + white * 0.153852;
-      b3 = 0.8665 * b3 + white * 0.3104856;
-      b4 = 0.55 * b4 + white * 0.5329522;
-      b5 = -0.7616 * b5 - white * 0.016898;
-      data[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.11;
-      b6 = white * 0.115926;
-    } else {
-      // brown
-      data[i] = (lastOut + 0.02 * white) / 1.02;
-      lastOut = data[i];
-      data[i] *= 3.5;
-    }
-  }
-  return buffer;
-}
-
-type Scene = (ctx: AudioContext, out: GainNode) => () => void;
-
-const scenes: Record<SoundId, Scene> = {
-  rain: (ctx, out) => {
-    const src = ctx.createBufferSource();
-    src.buffer = makeNoiseBuffer(ctx, 3, "white");
-    src.loop = true;
-    const hp = ctx.createBiquadFilter();
-    hp.type = "highpass";
-    hp.frequency.value = 600;
-    const lp = ctx.createBiquadFilter();
-    lp.type = "lowpass";
-    lp.frequency.value = 5000;
-    src.connect(hp).connect(lp).connect(out);
-    src.start();
-    return () => {
-      try { src.stop(); } catch {}
-      src.disconnect();
-      hp.disconnect();
-      lp.disconnect();
-    };
-  },
-  cafe: (ctx, out) => {
-    const src = ctx.createBufferSource();
-    src.buffer = makeNoiseBuffer(ctx, 4, "brown");
-    src.loop = true;
-    const lp = ctx.createBiquadFilter();
-    lp.type = "lowpass";
-    lp.frequency.value = 900;
-    const gain = ctx.createGain();
-    gain.gain.value = 0.6;
-    src.connect(lp).connect(gain).connect(out);
-    src.start();
-    return () => {
-      try { src.stop(); } catch {}
-      src.disconnect();
-      lp.disconnect();
-      gain.disconnect();
-    };
-  },
-  lofi: (ctx, out) => {
-    // Soft sustained chord (Cmaj7-ish) with slow detune wobble
-    const freqs = [220, 277.18, 329.63, 415.3];
-    const oscs: OscillatorNode[] = [];
-    const gains: GainNode[] = [];
-    const lp = ctx.createBiquadFilter();
-    lp.type = "lowpass";
-    lp.frequency.value = 1200;
-    lp.Q.value = 0.5;
-    lp.connect(out);
-    freqs.forEach((f, i) => {
-      const o = ctx.createOscillator();
-      o.type = i === 0 ? "triangle" : "sine";
-      o.frequency.value = f;
-      const g = ctx.createGain();
-      g.gain.value = 0.08;
-      // Slow LFO on detune for warmth
-      const lfo = ctx.createOscillator();
-      lfo.frequency.value = 0.1 + i * 0.05;
-      const lfoGain = ctx.createGain();
-      lfoGain.gain.value = 4;
-      lfo.connect(lfoGain).connect(o.detune);
-      lfo.start();
-      o.connect(g).connect(lp);
-      o.start();
-      oscs.push(o, lfo);
-      gains.push(g, lfoGain);
-    });
-    // Light tape hiss
-    const noise = ctx.createBufferSource();
-    noise.buffer = makeNoiseBuffer(ctx, 2, "pink");
-    noise.loop = true;
-    const ng = ctx.createGain();
-    ng.gain.value = 0.04;
-    noise.connect(ng).connect(out);
-    noise.start();
-    return () => {
-      oscs.forEach((o) => { try { o.stop(); } catch {} o.disconnect(); });
-      gains.forEach((g) => g.disconnect());
-      try { noise.stop(); } catch {}
-      noise.disconnect();
-      ng.disconnect();
-      lp.disconnect();
-    };
-  },
-  nature: (ctx, out) => {
-    // Wind: pink noise with slow LFO on lowpass
-    const wind = ctx.createBufferSource();
-    wind.buffer = makeNoiseBuffer(ctx, 4, "pink");
-    wind.loop = true;
-    const lp = ctx.createBiquadFilter();
-    lp.type = "lowpass";
-    lp.frequency.value = 800;
-    const lfo = ctx.createOscillator();
-    lfo.frequency.value = 0.15;
-    const lfoGain = ctx.createGain();
-    lfoGain.gain.value = 400;
-    lfo.connect(lfoGain).connect(lp.frequency);
-    lfo.start();
-    const windGain = ctx.createGain();
-    windGain.gain.value = 0.7;
-    wind.connect(lp).connect(windGain).connect(out);
-    wind.start();
-
-    // Occasional bird chirps
-    let stopped = false;
-    const chirp = () => {
-      if (stopped) return;
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      const base = 1800 + Math.random() * 1400;
-      o.frequency.setValueAtTime(base, ctx.currentTime);
-      o.frequency.exponentialRampToValueAtTime(base * 1.6, ctx.currentTime + 0.08);
-      o.frequency.exponentialRampToValueAtTime(base * 0.9, ctx.currentTime + 0.16);
-      g.gain.setValueAtTime(0.0001, ctx.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.2);
-      o.connect(g).connect(out);
-      o.start();
-      o.stop(ctx.currentTime + 0.25);
-      setTimeout(chirp, 1500 + Math.random() * 4500);
-    };
-    setTimeout(chirp, 1200);
-
-    return () => {
-      stopped = true;
-      try { wind.stop(); } catch {}
-      try { lfo.stop(); } catch {}
-      wind.disconnect();
-      lp.disconnect();
-      lfo.disconnect();
-      lfoGain.disconnect();
-      windGain.disconnect();
-    };
-  },
-};
 
 export function AmbientControls() {
   const [active, setActive] = useState<SoundId | null>(null);
+  const [trackIndex, setTrackIndex] = useState(0);
   const [muted, setMuted] = useState(false);
   const [volume, setVolume] = useState(0.5);
+  const [loading, setLoading] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const usedFallbackRef = useRef(false);
 
-  const ctxRef = useRef<AudioContext | null>(null);
-  const masterRef = useRef<GainNode | null>(null);
-  const disposeRef = useRef<(() => void) | null>(null);
-
-  const ensureCtx = useCallback(() => {
-    if (typeof window === "undefined") return null;
-    if (!ctxRef.current) {
-      const AC = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AC) return null;
-      const ctx = new AC();
-      const master = ctx.createGain();
-      master.gain.value = muted ? 0 : volume;
-      master.connect(ctx.destination);
-      ctxRef.current = ctx;
-      masterRef.current = master;
-    }
-    return ctxRef.current;
-  }, [muted, volume]);
-
+  // Ensure audio element exists
   useEffect(() => {
-    if (masterRef.current && ctxRef.current) {
-      const target = muted ? 0 : volume;
-      masterRef.current.gain.cancelScheduledValues(ctxRef.current.currentTime);
-      masterRef.current.gain.linearRampToValueAtTime(
-        target,
-        ctxRef.current.currentTime + 0.15
-      );
-    }
-  }, [muted, volume]);
-
-  useEffect(() => {
+    const a = new Audio();
+    a.preload = "auto";
+    a.crossOrigin = "anonymous";
+    audioRef.current = a;
     return () => {
-      disposeRef.current?.();
-      ctxRef.current?.close().catch(() => {});
+      a.pause();
+      a.src = "";
     };
+  }, []);
+
+  // Volume / mute sync
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume;
+      audioRef.current.muted = muted;
+    }
+  }, [volume, muted]);
+
+  const playTrack = useCallback(async (id: SoundId, idx: number) => {
+    const a = audioRef.current;
+    if (!a) return;
+    const list = playlists[id];
+    const track = list[idx % list.length];
+    usedFallbackRef.current = false;
+    a.src = track.url;
+    a.loop = true;
+    setLoading(true);
+    try {
+      await a.play();
+    } catch {
+      // Fallback to streaming radio if direct file fails (CORS/404)
+      const fb = fallbackStreams[id][0];
+      usedFallbackRef.current = true;
+      a.src = fb.url;
+      a.loop = false;
+      try { await a.play(); } catch {}
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   const toggle = useCallback(
     async (id: SoundId) => {
-      const ctx = ensureCtx();
-      if (!ctx || !masterRef.current) return;
-      if (ctx.state === "suspended") {
-        try { await ctx.resume(); } catch {}
-      }
-
-      // Stop current
-      disposeRef.current?.();
-      disposeRef.current = null;
-
+      const a = audioRef.current;
+      if (!a) return;
       if (active === id) {
+        a.pause();
         setActive(null);
         return;
       }
-
-      const dispose = scenes[id](ctx, masterRef.current);
-      disposeRef.current = dispose;
       setActive(id);
+      setTrackIndex(0);
+      await playTrack(id, 0);
     },
-    [active, ensureCtx]
+    [active, playTrack]
   );
+
+  const skip = useCallback(async () => {
+    if (!active) return;
+    const next = trackIndex + 1;
+    setTrackIndex(next);
+    await playTrack(active, next);
+  }, [active, trackIndex, playTrack]);
+
+  const currentTrack = active
+    ? usedFallbackRef.current
+      ? fallbackStreams[active][0]
+      : playlists[active][trackIndex % playlists[active].length]
+    : null;
 
   return (
     <motion.div
@@ -255,17 +140,29 @@ export function AmbientControls() {
     >
       <div className="flex items-center justify-between mb-4">
         <div>
-          <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Ambient</div>
-          <h3 className="text-sm font-medium mt-1">Study atmosphere</h3>
+          <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Soundscapes</div>
+          <h3 className="text-sm font-medium mt-1">Focus music</h3>
         </div>
-        <button
-          onClick={() => setMuted((m) => !m)}
-          className="btn-ghost !p-2"
-          title={muted ? "Unmute" : "Mute"}
-          aria-label={muted ? "Unmute" : "Mute"}
-        >
-          {muted ? <VolumeX size={14} /> : <Volume2 size={14} />}
-        </button>
+        <div className="flex items-center gap-1">
+          {active && (
+            <button
+              onClick={skip}
+              className="btn-ghost !p-2"
+              title="Next track"
+              aria-label="Next track"
+            >
+              <SkipForward size={14} />
+            </button>
+          )}
+          <button
+            onClick={() => setMuted((m) => !m)}
+            className="btn-ghost !p-2"
+            title={muted ? "Unmute" : "Mute"}
+            aria-label={muted ? "Unmute" : "Mute"}
+          >
+            {muted ? <VolumeX size={14} /> : <Volume2 size={14} />}
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-2 mb-4">
@@ -283,17 +180,23 @@ export function AmbientControls() {
               }`}
             >
               <Icon size={15} className={isOn ? "text-foreground" : "text-muted-foreground"} />
-              <div className="flex-1">
-                <div className="text-sm font-medium">{s.label}</div>
-                <div className="text-[10px] text-muted-foreground">
-                  {isOn ? "Playing" : s.hint}
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium truncate">{s.label}</div>
+                <div className="text-[10px] text-muted-foreground truncate">
+                  {isOn ? (loading ? "Loading…" : "Playing") : s.hint}
                 </div>
               </div>
-              {isOn && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-soft" />}
+              {isOn && !loading && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-soft" />}
             </button>
           );
         })}
       </div>
+
+      {currentTrack && (
+        <div className="mb-3 text-[11px] text-muted-foreground truncate">
+          <span className="text-foreground/80">Now playing:</span> {currentTrack.title}
+        </div>
+      )}
 
       <div className="flex items-center gap-3">
         <Volume2 size={12} className="text-muted-foreground" />
