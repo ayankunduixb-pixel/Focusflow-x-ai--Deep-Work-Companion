@@ -61,11 +61,19 @@ export function Clock() {
   );
 }
 
+export function useGreeting(name = "Ayan") {
+  const [g, setG] = useState(`Hello, ${name}`);
+  useEffect(() => {
+    const h = new Date().getHours();
+    if (h < 5) setG(`Late night, ${name}`);
+    else if (h < 12) setG(`Good morning, ${name}`);
+    else if (h < 17) setG(`Good afternoon, ${name}`);
+    else if (h < 22) setG(`Good evening, ${name}`);
+    else setG(`Burning late, ${name}`);
+  }, [name]);
+  return g;
+}
+
 export function greet(name = "Ayan") {
-  const h = new Date().getHours();
-  if (h < 5) return `Late night, ${name}`;
-  if (h < 12) return `Good morning, ${name}`;
-  if (h < 17) return `Good afternoon, ${name}`;
-  if (h < 22) return `Good evening, ${name}`;
-  return `Burning late, ${name}`;
+  return `Hello, ${name}`;
 }
