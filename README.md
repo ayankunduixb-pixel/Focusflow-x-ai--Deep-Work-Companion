@@ -169,8 +169,8 @@ This project is part of my initiative to:
 
 ### Ayan Kundu
 
-- GitHub: https://github.com/your-username
-- LinkedIn: https://linkedin.com/in/your-linkedin
+- GitHub: https://github.com/ayankunduixb-pixel/Focusflow-x-ai--Deep-Work-Companion
+- LinkedIn: https://www.linkedin.com/in/ayan-kundu-389737397
 
 ---
 
