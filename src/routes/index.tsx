@@ -157,7 +157,12 @@ function Index() {
           </motion.div>
           <div className="space-y-4">
             <GoalsTracker />
-            <AmbientControls />
+            <SessionBriefing
+              focusMinutes={focusMinutes}
+              sessions={sessions}
+              streak={streak}
+              score={score}
+            />
           </div>
         </section>
 
