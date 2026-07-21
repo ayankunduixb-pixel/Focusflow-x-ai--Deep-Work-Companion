@@ -74,7 +74,7 @@ Built under the **"Build One App A Day"** challenge using AI-assisted developmen
 # 📸 Screenshots
 
 ## Home Dashboard
-_Add screenshot here_
+home-dashboard.png
 
 ## Focus Mode
 _Add screenshot here_
