@@ -74,13 +74,16 @@ Built under the **"Build One App A Day"** challenge using AI-assisted developmen
 # 📸 Screenshots
 
 ## Home Dashboard
-home-dashboard.png
+<img width="2880" height="1800" alt="home-dashboard" src="https://github.com/user-attachments/assets/62612baf-fcf1-4c7e-a85d-68374dedcf3d" />
+
 
 ## Focus Mode
-_Add screenshot here_
+<img width="2880" height="1800" alt="focus-mode" src="https://github.com/user-attachments/assets/8bf1ee84-ff28-4bd7-beda-3b10ca820cb0" />
+
 
 ## Analytics Section
-_Add screenshot here_
+<img width="2880" height="1800" alt="analytics-section" src="https://github.com/user-attachments/assets/4afd708e-d4d5-49b9-a6c9-9e2a71e0ea83" />
+
 
 ---
 
