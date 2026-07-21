@@ -9,7 +9,7 @@ import { toast, Toaster } from "sonner";
 import { FocusTimer } from "@/components/FocusTimer";
 import { Dashboard } from "@/components/Dashboard";
 import { QuoteEngine } from "@/components/QuoteEngine";
-import { AmbientControls } from "@/components/AmbientControls";
+import { SessionBriefing } from "@/components/SessionBriefing";
 import { AIAssistant } from "@/components/AIAssistant";
 import { Achievements } from "@/components/Achievements";
 import { GoalsTracker } from "@/components/GoalsTracker";
@@ -157,7 +157,12 @@ function Index() {
           </motion.div>
           <div className="space-y-4">
             <GoalsTracker />
-            <AmbientControls />
+            <SessionBriefing
+              focusMinutes={focusMinutes}
+              sessions={sessions}
+              streak={streak}
+              score={score}
+            />
           </div>
         </section>
 
